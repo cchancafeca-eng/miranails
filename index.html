@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#e91e8c"/>
+<title>💅 Miranails</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;}
+input:focus{outline:2px solid #e91e8c;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:#fff0f7;}::-webkit-scrollbar-thumb{background:#e91e8c55;border-radius:99px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useRef,useCallback}=React;
+const F="#e91e8c",F2="#ff69b4",FL="#fff0f7",FD="#c2177a";
+const PASS="647881867",AWA="34647881867",SK="miranails_citas";
+
+const SERVICIOS=[
+  {cat:"💅 Manicura",items:[
+    {name:"Manicura básica",price:"18€",dur:"45 min",desc:"Limado, cutícula y esmaltado clásico"},
+    {name:"Manicura semipermanente",price:"25€",dur:"60 min",desc:"Duración de hasta 3 semanas"},
+    {name:"Manicura gel",price:"35€",dur:"75 min",desc:"Uñas de gel con acabado profesional"},
+    {name:"Relleno de gel",price:"28€",dur:"60 min",desc:"Mantenimiento de uñas de gel"},
+  ]},
+  {cat:"🦶 Pedicura",items:[
+    {name:"Pedicura básica",price:"22€",dur:"50 min",desc:"Limado, cutícula y esmaltado"},
+    {name:"Pedicura spa",price:"35€",dur:"75 min",desc:"Exfoliación, hidratación y masaje"},
+    {name:"Pedicura semipermanente",price:"30€",dur:"70 min",desc:"Semipermanente en pies, larga duración"},
+  ]},
+  {cat:"🎨 Nail Art",items:[
+    {name:"Diseño sencillo",price:"+8€",dur:"+20 min",desc:"Líneas, puntos o degradado básico"},
+    {name:"Diseño medio",price:"+15€",dur:"+30 min",desc:"Flores, mármol o efectos especiales"},
+    {name:"Diseño complejo",price:"+25€",dur:"+45 min",desc:"Diseños personalizados y detallados"},
+    {name:"Chrome / Espejo",price:"+10€",dur:"+15 min",desc:"Efecto espejo o polvo cromado"},
+  ]},
+  {cat:"✨ Extras",items:[
+    {name:"Quitado de gel/acrílico",price:"12€",dur:"30 min",desc:"Retirada segura sin dañar la uña"},
+    {name:"Hidratación de manos",price:"10€",dur:"20 min",desc:"Mascarilla y masaje hidratante"},
+    {name:"Reparación de uña",price:"5€",dur:"10 min",desc:"Reparación de una uña rota o dañada"},
+  ]},
+];
+
+const HORAS=["9:00","9:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
+
+const FAQ=[
+  {q:"¿Dónde estáis?",a:"📍 Estamos en Calle Gran Vía 42, Madrid. ¡Te esperamos!"},
+  {q:"¿Cómo puedo pagar?",a:"💳 Aceptamos efectivo, tarjeta y Bizum. ¡Todas las opciones!"},
+  {q:"¿Tenéis aparcamiento?",a:"🚗 Hay parking público a 2 minutos a pie en Calle Fuencarral."},
+  {q:"¿Puedo cancelar una cita?",a:"📞 Sí, puedes cancelar hasta 24h antes sin coste. Llámanos o escríbenos."},
+  {q:"¿Hacéis grupos o despedidas?",a:"🎉 ¡Sí! Tenemos packs especiales para grupos. Consúltanos sin compromiso."},
+  {q:"¿Cuánto duran las uñas de gel?",a:"💅 Con el cuidado adecuado duran entre 3 y 4 semanas perfectas."},
+];
+
+const loadC=()=>{try{const r=localStorage.getItem(SK);if(r)return JSON.parse(r);}catch{}return[];};
+const saveC=d=>{try{localStorage.setItem(SK,JSON.stringify(d));}catch{}};
+
+const notif=c=>{if("Notification"in window&&Notification.permission==="granted")new Notification("💅 Miranails — Nueva cita",{body:`${c.nombre} · ${c.servicio} · ${c.fecha} a las ${c.hora}`});};
+
+function BotMsg({children}){
+  return(
+    <div style={{marginBottom:8,display:"flex",alignItems:"flex-end",gap:8}}>
+      <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${F},${F2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>💅</div>
+      <div style={{background:"#fff",borderRadius:"18px 18px 18px 4px",padding:"12px 16px",maxWidth:"80%",fontSize:14,lineHeight:1.5,boxShadow:"0 1px 4px #0001",color:"#1a1a1a"}}>{children}</div>
+    </div>
+  );
+}
+function UserMsg({children}){
+  return(
+    <div style={{marginBottom:8,display:"flex",justifyContent:"flex-end"}}>
+      <div style={{background:`linear-gradient(135deg,${F},${F2})`,borderRadius:"18px 18px 4px 18px",padding:"12px 16px",maxWidth:"80%",fontSize:14,color:"#fff",lineHeight:1.5}}>{children}</div>
+    </div>
+  );
+}
+function Btns({options,onSelect,color}){
+  const c=color||F;
+  return(
+    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12,marginLeft:40}}>
+      {options.map(o=>(
+        <button key={o.label||o} onClick={()=>onSelect(o)}
+          style={{padding:"8px 14px",borderRadius:99,border:`2px solid ${c}`,background:"#fff",color:c,fontSize:13,fontWeight:600,cursor:"pointer"}}
+          onMouseOver={e=>{e.currentTarget.style.background=c;e.currentTarget.style.color="#fff";}}
+          onMouseOut={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.color=c;}}>
+          {o.label||o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AdminPanel({onExit}){
+  const[citas,setCitas]=useState(loadC);
+  const[filtro,setFiltro]=useState("todas");
+  const[buscar,setBuscar]=useState("");
+
+  useEffect(()=>{if("Notification"in window&&Notification.permission==="default")Notification.requestPermission();},[]);
+
+  const actualizar=(id,estado)=>{const n=citas.map(c=>c.id===id?{...c,estado}:c);setCitas(n);saveC(n);};
+
+  const abrirWA=(cita,tipo)=>{
+    const msg=tipo==="aceptar"
+      ?`Hola ${cita.nombre} 💅 Tu cita en *Miranails* ha sido *confirmada* ✅\n\n📅 *Fecha:* ${cita.fecha}\n🕐 *Hora:* ${cita.hora}\n💅 *Servicio:* ${cita.servicio}\n\n¡Te esperamos! Si necesitas cambiarla avísanos con 24h. 🩷`
+      :`Hola ${cita.nombre}, lamentablemente no podemos confirmar tu cita del ${cita.fecha} a las ${cita.hora}. Disculpa las molestias, contáctanos para buscar otra fecha. Miranails 💅`;
+    window.open(`https://wa.me/${(cita.telefono||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank");
+  };
+
+  const recordatorio=cita=>{
+    const msg=`Hola ${cita.nombre} 💅 Te recordamos tu cita en *Miranails* mañana.\n\n📅 *Fecha:* ${cita.fecha}\n🕐 *Hora:* ${cita.hora}\n💅 *Servicio:* ${cita.servicio}\n\n¡Te esperamos! 🩷`;
+    window.open(`https://wa.me/${(cita.telefono||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,"_blank");
+  };
+
+  const cf=citas.filter(c=>filtro==="todas"||c.estado===filtro).filter(c=>!buscar||c.nombre?.toLowerCase().includes(buscar.toLowerCase())||c.servicio?.toLowerCase().includes(buscar.toLowerCase())).sort((a,b)=>b.id-a.id);
+  const cnt={pendiente:citas.filter(c=>c.estado==="pendiente").length,aceptada:citas.filter(c=>c.estado==="aceptada").length,rechazada:citas.filter(c=>c.estado==="rechazada").length};
+
+  return(
+    <div style={{minHeight:"100vh",background:"#fdf2f8",fontFamily:"'Segoe UI',sans-serif"}}>
+      <div style={{background:`linear-gradient(135deg,${F},${F2})`,padding:"20px 20px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontSize:22,fontWeight:800,color:"#fff"}}>💅 Miranails</div>
+          <div style={{fontSize:13,color:"#ffffffcc"}}>Panel de administración</div>
+        </div>
+        <button onClick={onExit} style={{background:"#fff2",border:"1px solid #fff4",borderRadius:10,color:"#fff",padding:"8px 14px",cursor:"pointer",fontSize:13}}>Salir</button>
+      </div>
+      <div style={{padding:16,maxWidth:600,margin:"0 auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+          {[{label:"Pendientes",val:cnt.pendiente,color:"#f59e0b",bg:"#fffbeb"},{label:"Aceptadas",val:cnt.aceptada,color:"#22c55e",bg:"#f0fdf4"},{label:"Rechazadas",val:cnt.rechazada,color:"#ef4444",bg:"#fef2f2"}].map(s=>(
+            <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}33`,borderRadius:14,padding:"12px 10px",textAlign:"center"}}>
+              <div style={{fontSize:24,fontWeight:800,color:s.color}}>{s.val}</div>
+              <div style={{fontSize:11,color:"#666"}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+          {["todas","pendiente","aceptada","rechazada"].map(f=>(
+            <button key={f} onClick={()=>setFiltro(f)} style={{padding:"6px 14px",borderRadius:99,border:`2px solid ${F}`,background:filtro===f?F:"#fff",color:filtro===f?"#fff":F,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              {f==="todas"?"Todas":f.charAt(0).toUpperCase()+f.slice(1)+"s"}
+            </button>
+          ))}
+          <button onClick={()=>setCitas(loadC())} style={{padding:"6px 14px",borderRadius:99,border:"2px solid #94a3b8",background:"#fff",color:"#64748b",fontSize:12,cursor:"pointer"}}>🔄 Actualizar</button>
+        </div>
+        <input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="🔍 Buscar por nombre o servicio..." style={{width:"100%",border:"1.5px solid #f0c0de",borderRadius:12,padding:"10px 14px",fontSize:13,marginBottom:16,outline:"none",boxSizing:"border-box",background:"#fff"}}/>
+        {cf.length===0
+          ?<div style={{textAlign:"center",color:"#c2177a99",padding:40,fontSize:15}}>No hay citas {filtro!=="todas"?filtro+"s":""} aún 💅</div>
+          :cf.map(c=>(
+            <div key={c.id} style={{background:"#fff",borderRadius:18,padding:16,marginBottom:12,boxShadow:"0 2px 12px #e91e8c11",borderLeft:`4px solid ${c.estado==="aceptada"?"#22c55e":c.estado==="rechazada"?"#ef4444":"#f59e0b"}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:16}}>👤 {c.nombre}</div>
+                  <div style={{fontSize:13,color:F,fontWeight:600,marginTop:2}}>💅 {c.servicio} — {c.precio}</div>
+                </div>
+                <div style={{fontSize:11,padding:"4px 10px",borderRadius:99,background:c.estado==="aceptada"?"#dcfce7":c.estado==="rechazada"?"#fee2e2":"#fef3c7",color:c.estado==="aceptada"?"#16a34a":c.estado==="rechazada"?"#dc2626":"#d97706",fontWeight:700}}>
+                  {c.estado==="aceptada"?"✅ Aceptada":c.estado==="rechazada"?"❌ Rechazada":"⏳ Pendiente"}
+                </div>
+              </div>
+              <div style={{fontSize:13,color:"#555",display:"flex",flexWrap:"wrap",gap:"6px 16px",marginBottom:12}}>
+                <span>📅 {c.fecha}</span><span>🕐 {c.hora}</span><span>📞 {c.telefono}</span>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {c.estado==="pendiente"&&<>
+                  <button onClick={()=>{actualizar(c.id,"aceptada");abrirWA(c,"aceptar");}} style={{flex:1,padding:"8px 12px",borderRadius:10,border:"none",background:"#22c55e",color:"#fff",fontWeight:700,cursor:"pointer",fontSize:13}}>✅ Aceptar + WA</button>
+                  <button onClick={()=>{actualizar(c.id,"rechazada");abrirWA(c,"rechazar");}} style={{flex:1,padding:"8px 12px",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",fontWeight:700,cursor:"pointer",fontSize:13}}>❌ Rechazar + WA</button>
+                </>}
+                {c.estado==="aceptada"&&<>
+                  <button onClick={()=>recordatorio(c)} style={{flex:1,padding:"8px 12px",borderRadius:10,border:`2px solid ${F}`,background:"#fff",color:F,fontWeight:700,cursor:"pointer",fontSize:13}}>⏰ Recordatorio WA</button>
+                  <button onClick={()=>abrirWA(c,"aceptar")} style={{padding:"8px 12px",borderRadius:10,border:"2px solid #22c55e",background:"#fff",color:"#22c55e",fontWeight:700,cursor:"pointer",fontSize:13}}>📱 WA</button>
+                </>}
+                {c.estado==="rechazada"&&<button onClick={()=>actualizar(c.id,"pendiente")} style={{flex:1,padding:"8px 12px",borderRadius:10,border:`2px solid ${F}`,background:"#fff",color:F,fontWeight:700,cursor:"pointer",fontSize:12}}>↩️ Reabrir</button>}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+function AdminLogin({onLogin,onBack}){
+  const[pass,setPass]=useState("");
+  const[err,setErr]=useState(false);
+  const check=()=>{if(pass===PASS)onLogin();else{setErr(true);setTimeout(()=>setErr(false),1500);}};
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${FL},#fce4f3)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Segoe UI',sans-serif"}}>
+      <div style={{background:"#fff",borderRadius:24,padding:32,width:300,boxShadow:`0 8px 40px ${F}22`,textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:8}}>🔐</div>
+        <div style={{fontSize:20,fontWeight:800,color:FD,marginBottom:4}}>Panel Admin</div>
+        <div style={{fontSize:13,color:"#c2177a99",marginBottom:24}}>Miranails</div>
+        <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&check()} placeholder="Contraseña..." style={{width:"100%",border:`1.5px solid ${err?"#ef4444":F}`,borderRadius:12,padding:"12px 16px",fontSize:15,outline:"none",boxSizing:"border-box",textAlign:"center",marginBottom:8}}/>
+        {err&&<div style={{color:"#ef4444",fontSize:13,marginBottom:8}}>Contraseña incorrecta ❌</div>}
+        <button onClick={check} style={{width:"100%",padding:14,background:`linear-gradient(135deg,${F},${F2})`,border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:10}}>Entrar</button>
+        <button onClick={onBack} style={{background:"none",border:"none",color:"#c2177a99",fontSize:13,cursor:"pointer"}}>← Volver al chat</button>
+      </div>
+    </div>
+  );
+}
+
+function Chatbot(){
+  const[open,setOpen]=useState(false);
+  const[msgs,setMsgs]=useState([]);
+  const[step,setStep]=useState("main");
+  const[cita,setCita]=useState({});
+  const[catIdx,setCatIdx]=useState(0);
+  const[input,setInput]=useState("");
+  const[inputMode,setInputMode]=useState(false);
+  const[inputLabel,setInputLabel]=useState("");
+  const[ready,setReady]=useState(false);
+  const bottom=useRef();
+
+  useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth"});},[msgs,step]);
+
+  const addBot=(content,delay=0)=>new Promise(res=>setTimeout(()=>{setMsgs(m=>[...m,{type:"bot",content}]);res();},delay+800));
+  const addUser=txt=>setMsgs(m=>[...m,{type:"user",content:txt}]);
+
+  const goWelcome=async()=>{
+    setStep("loading");setMsgs([]);setReady(false);
+    await addBot(React.createElement("span",null,"¡Hola! 👋 Bienvenida a ",React.createElement("b",{style:{color:F}},"Miranails")," 💅 Soy tu asistente virtual. ¿En qué puedo ayudarte?"),200);
+    setStep("main");setReady(true);
+  };
+
+  useEffect(()=>{if(open&&msgs.length===0)goWelcome();},[open]);
+
+  const handleInput=()=>{
+    if(!input.trim())return;
+    const val=input.trim();setInput("");setInputMode(false);addUser(val);
+    if(step==="cita_nombre"){setCita(c=>({...c,nombre:val}));setStep("cita_fecha");setInputMode(true);setInputLabel("Escribe la fecha (ej: lunes 19 de mayo)...");}
+    else if(step==="cita_fecha"){setCita(c=>({...c,fecha:val}));setStep("cita_hora");}
+    else if(step==="cita_telefono"){setCita(c=>({...c,telefono:val}));setStep("cita_confirmar");}
+  };
+
+  const confirmarCita=()=>{
+    const nueva={...cita,id:Date.now(),estado:"pendiente"};
+    const todas=loadC();saveC([...todas,nueva]);notif(nueva);
+    const msg=`💅 *Nueva cita en Miranails*\n\n👤 *Cliente:* ${nueva.nombre}\n💅 *Servicio:* ${nueva.servicio} (${nueva.precio})\n📅 *Fecha:* ${nueva.fecha}\n🕐 *Hora:* ${nueva.hora}\n📞 *Teléfono:* ${nueva.telefono}\n\nEntra al panel para confirmarla.`;
+    window.open(`https://wa.me/${AWA}?text=${encodeURIComponent(msg)}`,"_blank");
+    addUser("✅ Confirmar cita");setStep("cita_ok");
+  };
+
+  const MAIN_OPTS=["📅 Reservar cita","💅 Ver servicios y precios","❓ Preguntas frecuentes"];
+
+  const handleMain=opt=>{
+    addUser(opt);
+    if(opt==="📅 Reservar cita"){setStep("cita_cat");setCita({});setCatIdx(0);}
+    else if(opt==="💅 Ver servicios y precios")setStep("servicios");
+    else if(opt==="❓ Preguntas frecuentes")setStep("faq");
+  };
+
+  const renderStep=()=>{
+    if(!ready)return null;
+    if(step==="main")return React.createElement(Btns,{options:MAIN_OPTS,onSelect:handleMain});
+    if(step==="servicios")return React.createElement(React.Fragment,null,
+      React.createElement(BotMsg,null,"Elige una categoría 👇"),
+      React.createElement(Btns,{options:SERVICIOS.map((s,i)=>({label:s.cat,idx:i})),onSelect:o=>{setCatIdx(o.idx);setStep("servicios_detalle");}}),
+      React.createElement(Btns,{options:[{label:"⬅️ Volver"}],onSelect:()=>setStep("main"),color:"#888"})
+    );
+    if(step==="servicios_detalle"){
+      const cat=SERVICIOS[catIdx];
+      return React.createElement(React.Fragment,null,
+        React.createElement(BotMsg,null,React.createElement("b",null,cat.cat),React.createElement("br"),React.createElement("br"),cat.items.map(i=>React.createElement("div",{key:i.name,style:{marginBottom:10}},React.createElement("b",null,i.name)," — ",React.createElement("span",{style:{color:F,fontWeight:700}},i.price),React.createElement("br"),React.createElement("span",{style:{fontSize:12,color:"#666"}},i.desc+" · "+i.dur)))),
+        React.createElement(Btns,{options:[{label:"📅 Reservar"},{label:"⬅️ Volver"}],onSelect:o=>{if(o.label.includes("Reservar")){setStep("cita_cat");setCita({});}else setStep("servicios");}})
+      );
+    }
+    if(step==="cita_cat")return React.createElement(React.Fragment,null,
+      React.createElement(BotMsg,null,"¡Vamos a reservar! 🎉 Elige el tipo de servicio:"),
+      React.createElement(Btns,{options:SERVICIOS.map((s,i)=>({label:s.cat,idx:i})),onSelect:o=>{setCatIdx(o.idx);setStep("cita_item");}})
+    );
+    if(step==="cita_item"){
+      const cat=SERVICIOS[catIdx];
+      return React.createElement(React.Fragment,null,
+        React.createElement(BotMsg,null,"Servicios de ",React.createElement("b",null,cat.cat),":"),
+        React.createElement(Btns,{options:cat.items.map(i=>({label:`${i.name} (${i.price})`,...i})),onSelect:o=>{addUser(o.name+" — "+o.price);setCita(c=>({...c,servicio:o.name,precio:o.price}));setStep("cita_nombre");setInputMode(true);setInputLabel("Tu nombre completo..."); }}),
+        React.createElement(Btns,{options:[{label:"⬅️ Volver"}],onSelect:()=>setStep("cita_cat"),color:"#888"})
+      );
+    }
+    if(step==="cita_fecha")return React.createElement(BotMsg,null,"¿Qué día prefieres? ✍️",React.createElement("br"),React.createElement("span",{style:{fontSize:12,color:"#888"}},"Escribe la fecha (ej: lunes 19 de mayo)"),React.createElement("br"),React.createElement("br"),React.createElement("b",null,"Horario:")," Lun–Vie 9:00–14:00 y 15:00–20:00",React.createElement("br"),"Sábados: solo clientes VIP 🌟");
+    if(step==="cita_hora")return React.createElement(React.Fragment,null,
+      React.createElement(BotMsg,null,"¿A qué hora? 🕐"),
+      React.createElement("div",{style:{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12,marginLeft:40}},
+        HORAS.map(h=>React.createElement("button",{key:h,onClick:()=>{addUser(h);setCita(c=>({...c,hora:h}));setStep("cita_telefono");setInputMode(true);setInputLabel("Tu teléfono o WhatsApp...");},style:{padding:"6px 12px",borderRadius:99,border:`2px solid ${F}`,background:"#fff",color:F,fontSize:13,fontWeight:600,cursor:"pointer"}},h))
+      )
+    );
+    if(step==="cita_confirmar")return React.createElement(React.Fragment,null,
+      React.createElement(BotMsg,null,React.createElement("b",null,"Resumen de tu cita 🎀"),React.createElement("br"),React.createElement("br"),"💅 ",React.createElement("b",null,"Servicio:")," "+cita.servicio,React.createElement("br"),"💶 ",React.createElement("b",null,"Precio:")," "+cita.precio,React.createElement("br"),"👤 ",React.createElement("b",null,"Nombre:")," "+cita.nombre,React.createElement("br"),"📅 ",React.createElement("b",null,"Fecha:")," "+cita.fecha,React.createElement("br"),"🕐 ",React.createElement("b",null,"Hora:")," "+cita.hora,React.createElement("br"),"📞 ",React.createElement("b",null,"Teléfono:")," "+cita.telefono,React.createElement("br"),React.createElement("br"),"Al confirmar, avisaremos a Miranails por WhatsApp 📱"),
+      React.createElement(Btns,{options:[{label:"✅ Confirmar cita"},{label:"❌ Cancelar"}],onSelect:o=>{if(o.label.includes("Confirmar"))confirmarCita();else{addUser("Cancelar");setStep("main");}}})
+    );
+    if(step==="cita_ok")return React.createElement(React.Fragment,null,
+      React.createElement(BotMsg,null,React.createElement("b",null,"¡Cita enviada! 🎉💅"),React.createElement("br"),React.createElement("br"),"Miranails recibirá tu solicitud y te confirmará por WhatsApp en breve.",React.createElement("br"),React.createElement("br"),"¡Hasta pronto! 🩷"),
+      React.createElement(Btns,{options:[{label:"🏠 Inicio"}],onSelect:()=>{addUser("Inicio");setStep("main");}})
+    );
+    if(step==="faq")return React.createElement(React.Fragment,null,
+      React.createElement(BotMsg,null,"¿Sobre qué tienes dudas? 👇"),
+      React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:12,marginLeft:40}},
+        FAQ.map(f=>React.createElement("button",{key:f.q,onClick:()=>{addUser(f.q);setMsgs(m=>[...m,{type:"bot",content:f.a}]);},style:{padding:"8px 14px",borderRadius:12,border:`1px solid ${F}`,background:FL,color:"#1a1a1a",fontSize:13,cursor:"pointer",textAlign:"left"}},f.q))
+      ),
+      React.createElement(Btns,{options:[{label:"⬅️ Volver"}],onSelect:()=>setStep("main"),color:"#888"})
+    );
+    return null;
+  };
+
+  return React.createElement(React.Fragment,null,
+    React.createElement("button",{onClick:()=>setOpen(o=>!o),style:{position:"fixed",bottom:28,right:28,width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${F},${F2})`,border:"none",cursor:"pointer",fontSize:28,boxShadow:`0 4px 20px ${F}55`,animation:"pulse 2s infinite",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}},open?"✕":"💬"),
+    open&&React.createElement("div",{style:{position:"fixed",bottom:104,right:28,width:360,maxWidth:"calc(100vw - 56px)",height:580,maxHeight:"calc(100vh - 130px)",background:"#f5f5f5",borderRadius:24,boxShadow:"0 8px 40px #0002",display:"flex",flexDirection:"column",zIndex:999,animation:"fadeUp .3s ease",overflow:"hidden"}},
+      React.createElement("div",{style:{background:`linear-gradient(135deg,${F},${F2})`,padding:"16px 20px",display:"flex",alignItems:"center",gap:12}},
+        React.createElement("div",{style:{width:42,height:42,borderRadius:"50%",background:"#fff3",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}},"💅"),
+        React.createElement("div",null,
+          React.createElement("div",{style:{fontWeight:800,color:"#fff",fontSize:16}},"Miranails"),
+          React.createElement("div",{style:{fontSize:12,color:"#ffffffcc"}},"🟢 En línea · Respondemos al momento")
+        )
+      ),
+      React.createElement("div",{style:{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column"}},
+        msgs.map((m,i)=>m.type==="bot"
+          ?React.createElement("div",{key:i,style:{marginBottom:8,display:"flex",alignItems:"flex-end",gap:8}},
+            React.createElement("div",{style:{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${F},${F2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}},"💅"),
+            React.createElement("div",{style:{background:"#fff",borderRadius:"18px 18px 18px 4px",padding:"12px 16px",maxWidth:"80%",fontSize:14,lineHeight:1.5,boxShadow:"0 1px 4px #0001",color:"#1a1a1a"}},m.content)
+          )
+          :React.createElement(UserMsg,{key:i},m.content)
+        ),
+        renderStep(),
+        React.createElement("div",{ref:bottom})
+      ),
+      inputMode&&React.createElement("div",{style:{padding:"12px 16px",background:"#fff",borderTop:"1px solid #f0c0de",display:"flex",gap:10}},
+        React.createElement("input",{value:input,onChange:e=>setInput(e.target.value),onKeyDown:e=>e.key==="Enter"&&handleInput(),placeholder:inputLabel,style:{flex:1,border:`1.5px solid ${F}`,borderRadius:99,padding:"10px 16px",fontSize:14,outline:"none",color:"#1a1a1a"}}),
+        React.createElement("button",{onClick:handleInput,style:{width:40,height:40,borderRadius:"50%",background:`linear-gradient(135deg,${F},${F2})`,border:"none",color:"#fff",fontSize:18,cursor:"pointer"}},"→")
+      )
+    )
+  );
+}
+
+function App(){
+  const[vista,setVista]=useState("web");
+  return React.createElement("div",{style:{fontFamily:"'Segoe UI',sans-serif"}},
+    vista==="login"&&React.createElement(AdminLogin,{onLogin:()=>setVista("admin"),onBack:()=>setVista("web")}),
+    vista==="admin"&&React.createElement(AdminPanel,{onExit:()=>setVista("web")}),
+    vista==="web"&&React.createElement(React.Fragment,null,
+      React.createElement("div",{style:{minHeight:"100vh",background:`linear-gradient(135deg,${FL},#fce4f3)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}},
+        React.createElement("div",{style:{textAlign:"center",color:FD}},
+          React.createElement("div",{style:{fontSize:70,marginBottom:12}},"💅"),
+          React.createElement("h1",{style:{fontSize:36,fontWeight:800,margin:0}},"Miranails"),
+          React.createElement("p",{style:{fontSize:16,color:"#c2177a99",marginTop:8}},"Tu salón de uñas de confianza en Madrid"),
+          React.createElement("p",{style:{fontSize:14,color:"#c2177a77",marginTop:4}},"Pulsa el botón rosa para reservar tu cita 👇")
+        )
+      ),
+      React.createElement("button",{onClick:()=>setVista("login"),style:{position:"fixed",bottom:28,left:28,background:"#fff",border:`2px solid ${F}`,borderRadius:99,color:F,padding:"10px 18px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:`0 2px 12px ${F}22`}},"🔐 Admin"),
+      React.createElement(Chatbot,null)
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App,null));
+</script>
+</body>
+</html>
